@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Storefront</title>
+    <script src="https://cdn.jsdelivr.net/npm/rrweb@latest/dist/rrweb.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 3rem; background: #fafafa; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 300px; }
+        button { background: #000; color: #fff; border: none; padding: 10px 20px; cursor: pointer; margin-top: 15px;}
+        input { padding: 8px; width: 100%; margin-top: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Delusions of Grandeur <br><small><i>(*suffering from)</i></small></h1>
+        <p>Premium Heavyweight T-Shirt</p>
+        <input type="text" placeholder="Enter sizing notes (e.g., L)" />
+        <button onclick="alert('Added to cart!')">Add to Cart</button>
+    </div>
+
+    <script>
+        // Simple UUID v4 generator for POC purposes
+        function uuidv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Get or create session ID in localStorage
+        let sessionId = localStorage.getItem('rrweb_session_id');
+        if (!sessionId) {
+            sessionId = uuidv4();
+            localStorage.setItem('rrweb_session_id', sessionId);
+        }
+
+        let events = [];
+        
+        // Start recording
+        rrweb.record({
+            emit(event) {
+                events.push(event);
+            },
+        });
+
+        // Batch send to FastAPI every 3 seconds
+        setInterval(() => {
+            if (events.length > 0) {
+                const payload = {
+                    session_id: sessionId,
+                    domain: window.location.hostname,
+                    user_agent: navigator.userAgent,
+                    path: window.location.pathname,
+                    events: events
+                };
+
+                fetch('http://localhost:8082/events', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Site-ID': 'my-test-site-id' // Mock site ID for authorization
+                    },
+                    body: JSON.stringify(payload),
+                }).catch(err => console.error(err));
+                
+                events = []; // Clear queue after sending
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

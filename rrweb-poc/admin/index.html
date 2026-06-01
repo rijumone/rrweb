@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Replay Sessions</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb@latest/dist/rrweb.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/rrweb@latest/dist/rrweb.min.js"></script>
+    <style>
+        /* Apple-esque Theme Variables */
+        :root {
+            --bg-color: #f5f5f7;
+            --text-color: #1d1d1f;
+            --card-bg: #ffffff;
+            --border-color: #d2d2d7;
+            --primary-blue: #0071e3;
+            --primary-blue-hover: #0077ed;
+            --table-header: #f5f5f7;
+            --table-row-hover: #f5f5f7;
+            --input-bg: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --text-color: #f5f5f7;
+                --card-bg: #1c1c1e;
+                --border-color: #38383a;
+                --primary-blue: #0a84ff;
+                --primary-blue-hover: #0071e3;
+                --table-header: #1c1c1e;
+                --table-row-hover: #2c2c2e;
+                --input-bg: #1c1c1e;
+            }
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            padding: 2rem 4rem; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2 {
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .hidden { display: none !important; }
+
+        .view-section { 
+            margin-top: 2rem; 
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+        }
+
+        #replay-container { 
+            width: 1024px; 
+            height: 768px; 
+            border: 1px solid var(--border-color); 
+            background: var(--bg-color); 
+            margin-top: 1.5rem; 
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        button { 
+            padding: 8px 16px; 
+            font-size: 14px; 
+            font-weight: 500;
+            cursor: pointer; 
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 18px; /* Pill shape */
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--primary-blue-hover);
+            transform: scale(1.02);
+        }
+
+        button.secondary {
+            background-color: transparent;
+            color: var(--primary-blue);
+            border: 1px solid var(--primary-blue);
+        }
+        
+        button.secondary:hover {
+            background-color: rgba(0, 113, 227, 0.1);
+        }
+
+        input[type="password"], input[type="text"] { 
+            padding: 10px 14px; 
+            width: 220px; 
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="password"]:focus, input[type="text"]:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+
+        table { 
+            border-collapse: separate; 
+            border-spacing: 0;
+            width: 100%; 
+            max-width: 1200px; 
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td { 
+            padding: 12px 16px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        th { 
+            background-color: var(--table-header); 
+            font-weight: 600;
+            font-size: 13px;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover td {
+            background-color: var(--table-row-hover);
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        td small {
+            color: #86868b;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .auth-container, .filter-container { 
+            margin-bottom: 20px; 
+            display: flex; 
+            gap: 12px; 
+            align-items: center; 
+        }
+
+        .filter-container {
+            padding-bottom: 1rem;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Session Replay Admin</h1>
+    
+    <div class="auth-container">
+        <label>Admin Key: </label>
+        <input type="password" id="admin-key" placeholder="Enter secret key..." value="secret-admin-key" />
+        <button onclick="loadSessions()">Load Sessions</button>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="list-view" class="view-section">
+        <h2>Recorded Sessions</h2>
+        
+        <div class="filter-container">
+            <label>Domain: </label>
+            <input type="text" id="filter-domain" placeholder="e.g. localhost" onkeyup="filterTable()" />
+            <label>Path: </label>
+            <input type="text" id="filter-path" placeholder="e.g. /checkout" onkeyup="filterTable()" />
+        </div>
+
+        <table id="sessions-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Session ID</th>
+                    <th>Domain</th>
+                    <th>Path</th>
+                    <th>Events</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="sessions-tbody">
+                <!-- Data populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- REPLAY VIEW -->
+    <div id="replay-view" class="view-section hidden">
+        <h2>Replaying Session: <span id="current-session-id" style="color: #86868b; font-weight: 400;"></span></h2>
+        <p id="current-session-details" style="color: #86868b; font-size: 14px; margin-top: -10px; margin-bottom: 15px;"></p>
+        <button class="secondary" onclick="showListView()">&larr; Back to List</button>
+        <div id="replay-container"></div>
+    </div>
+
+    <script>
+        let globalSessions = [];
+
+        function getHeaders() {
+            const key = document.getElementById('admin-key').value;
+            return { 'X-Admin-Key': key };
+        }
+
+        async function loadSessions() {
+            try {
+                const res = await fetch('http://localhost:8082/sessions', {
+                    headers: getHeaders()
+                });
+                
+                if (res.status === 401) {
+                    alert("Unauthorized! Check Admin Key.");
+                    return;
+                }
+                
+                const sessions = await res.json();
+                globalSessions = sessions;
+                const tbody = document.getElementById('sessions-tbody');
+                tbody.innerHTML = '';
+                
+                sessions.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${new Date(s.created_at).toLocaleString()}</td>
+                        <td><small>${s.id}</small></td>
+                        <td class="col-domain">${s.domain || ''}</td>
+                        <td class="col-path">${s.path || ''}</td>
+                        <td>${s.event_count}</td>
+                        <td><button class="secondary" onclick="playSession('${s.id}')">Play</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                filterTable(); // Apply filters immediately if they exist
+                showListView();
+            } catch (err) {
+                console.error(err);
+                alert("Failed to load sessions. Is backend running?");
+            }
+        }
+
+        function filterTable() {
+            const domainFilter = document.getElementById('filter-domain').value.toLowerCase();
+            const pathFilter = document.getElementById('filter-path').value.toLowerCase();
+            const tbody = document.getElementById('sessions-tbody');
+            const rows = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const domainCell = rows[i].querySelector('.col-domain');
+                const pathCell = rows[i].querySelector('.col-path');
+                
+                if (domainCell && pathCell) {
+                    const domainText = domainCell.textContent.toLowerCase();
+                    const pathText = pathCell.textContent.toLowerCase();
+                    
+                    if (domainText.includes(domainFilter) && pathText.includes(pathFilter)) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        async function playSession(sessionId) {
+            try {
+                const res = await fetch(`http://localhost:8082/events/${sessionId}`, {
+                    headers: getHeaders()
+                });
+                
+                if (res.status !== 200) {
+                    alert("Failed to load events for session.");
+                    return;
+                }
+                
+                const events = await res.json();
+                if (events.length < 2) {
+                    alert("Not enough events to replay.");
+                    return;
+                }
+
+                showReplayView(sessionId);
+
+                // Initialize replayer
+                const container = document.getElementById('replay-container');
+                container.innerHTML = '';
+                const replayer = new rrweb.Replayer(events, {
+                    root: container,
+                });
+                
+                replayer.play();
+            } catch (err) {
+                console.error(err);
+                alert("Error playing session.");
+            }
+        }
+
+        function showListView() {
+            document.getElementById('list-view').classList.remove('hidden');
+            document.getElementById('replay-view').classList.add('hidden');
+            // stop replay if any by clearing container
+            document.getElementById('replay-container').innerHTML = '';
+        }
+
+        function showReplayView(sessionId) {
+            document.getElementById('list-view').classList.add('hidden');
+            document.getElementById('replay-view').classList.remove('hidden');
+            document.getElementById('current-session-id').textContent = sessionId;
+            
+            const s = globalSessions.find(x => x.id === sessionId);
+            if (s) {
+                const dateStr = new Date(s.created_at).toLocaleString();
+                const domainStr = s.domain ? s.domain : 'Unknown Domain';
+                document.getElementById('current-session-details').textContent = `${dateStr} • ${domainStr} • ${s.event_count} events`;
+            } else {
+                document.getElementById('current-session-details').textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: rrweb_user
+      POSTGRES_PASSWORD: rrweb_password
+      POSTGRES_DB: rrweb_db
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  backend:
+    build: ./backend
+    ports:
+      - "8082:8000"
+    environment:
+      - DATABASE_URL=postgresql://rrweb_user:rrweb_password@postgres:5432/rrweb_db
+    depends_on:
+      - postgres
+  storefront:
+    build: ./storefront
+    ports:
+      - "8080:80"
+  admin:
+    build: ./admin
+    ports:
+      - "8081:80"
+
+volumes:
+  pgdata:
