@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Admin - Replay Sessions</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb@latest/dist/rrweb.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/rrweb@latest/dist/rrweb.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.rrweb.com/replay/current/dist/style.css" />
+    <script type="module">
+        import { Replayer } from 'https://cdn.rrweb.com/replay/current/dist/replay.js';
+        window.rrweb = { Replayer };
+    </script>
     <style>
         /* Apple-esque Theme Variables */
         :root {
@@ -33,24 +37,27 @@
             }
         }
 
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            padding: 2rem 4rem; 
+            padding: 2rem 4rem;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
             -webkit-font-smoothing: antialiased;
         }
 
-        h1, h2 {
+        h1,
+        h2 {
             font-weight: 600;
             letter-spacing: -0.02em;
         }
 
-        .hidden { display: none !important; }
+        .hidden {
+            display: none !important;
+        }
 
-        .view-section { 
-            margin-top: 2rem; 
+        .view-section {
+            margin-top: 2rem;
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 12px;
@@ -58,25 +65,50 @@
             border: 1px solid var(--border-color);
         }
 
-        #replay-container { 
-            width: 1024px; 
-            height: 768px; 
-            border: 1px solid var(--border-color); 
-            background: var(--bg-color); 
-            margin-top: 1.5rem; 
+        #replay-container {
+            width: 1024px;
+            max-width: 100%;
+            height: 768px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            margin-top: 1.5rem;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: auto;
         }
 
-        button { 
-            padding: 8px 16px; 
-            font-size: 14px; 
+        #replay-container.fill-width {
+            width: 100%;
+            height: calc(100vh - 200px);
+        }
+
+        #replay-container:fullscreen {
+            width: 100vw;
+            max-width: 100vw;
+            height: 100vh;
+            margin: 0;
+            border-radius: 0;
+            border: none;
+        }
+
+        #replay-container:-webkit-full-screen {
+            width: 100vw;
+            max-width: 100vw;
+            height: 100vh;
+            margin: 0;
+            border-radius: 0;
+            border: none;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
             font-weight: 500;
-            cursor: pointer; 
+            cursor: pointer;
             background-color: var(--primary-blue);
             color: white;
             border: none;
-            border-radius: 18px; /* Pill shape */
+            border-radius: 18px;
+            /* Pill shape */
             transition: all 0.2s ease;
         }
 
@@ -90,14 +122,15 @@
             color: var(--primary-blue);
             border: 1px solid var(--primary-blue);
         }
-        
+
         button.secondary:hover {
             background-color: rgba(0, 113, 227, 0.1);
         }
 
-        input[type="password"], input[type="text"] { 
-            padding: 10px 14px; 
-            width: 220px; 
+        input[type="password"],
+        input[type="text"] {
+            padding: 10px 14px;
+            width: 220px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
             background-color: var(--input-bg);
@@ -107,25 +140,27 @@
             transition: border-color 0.2s ease;
         }
 
-        input[type="password"]:focus, input[type="text"]:focus {
+        input[type="password"]:focus,
+        input[type="text"]:focus {
             border-color: var(--primary-blue);
             box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
         }
 
-        table { 
-            border-collapse: separate; 
+        table {
+            border-collapse: separate;
             border-spacing: 0;
-            width: 100%; 
-            max-width: 1200px; 
+            width: 100%;
+            max-width: 1200px;
             margin-top: 1rem;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             overflow: hidden;
         }
 
-        th, td { 
-            padding: 12px 16px; 
-            text-align: left; 
+        th,
+        td {
+            padding: 12px 16px;
+            text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -133,8 +168,8 @@
             border-bottom: none;
         }
 
-        th { 
-            background-color: var(--table-header); 
+        th {
+            background-color: var(--table-header);
             font-weight: 600;
             font-size: 13px;
             color: #86868b;
@@ -155,11 +190,12 @@
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
 
-        .auth-container, .filter-container { 
-            margin-bottom: 20px; 
-            display: flex; 
-            gap: 12px; 
-            align-items: center; 
+        .auth-container,
+        .filter-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
 
         .filter-container {
@@ -172,9 +208,10 @@
         }
     </style>
 </head>
+
 <body>
     <h1>Session Replay Admin</h1>
-    
+
     <div class="auth-container">
         <label>Admin Key: </label>
         <input type="password" id="admin-key" placeholder="Enter secret key..." value="secret-admin-key" />
@@ -184,7 +221,7 @@
     <!-- LIST VIEW -->
     <div id="list-view" class="view-section">
         <h2>Recorded Sessions</h2>
-        
+
         <div class="filter-container">
             <label>Domain: </label>
             <input type="text" id="filter-domain" placeholder="e.g. localhost" onkeyup="filterTable()" />
@@ -212,8 +249,11 @@
     <!-- REPLAY VIEW -->
     <div id="replay-view" class="view-section hidden">
         <h2>Replaying Session: <span id="current-session-id" style="color: #86868b; font-weight: 400;"></span></h2>
-        <p id="current-session-details" style="color: #86868b; font-size: 14px; margin-top: -10px; margin-bottom: 15px;"></p>
+        <p id="current-session-details"
+            style="color: #86868b; font-size: 14px; margin-top: -10px; margin-bottom: 15px;"></p>
         <button class="secondary" onclick="showListView()">&larr; Back to List</button>
+        <button class="secondary" onclick="toggleFillWidth()" style="margin-left: 8px;">&harr; Fill Width</button>
+        <button class="secondary" onclick="toggleFullscreen()" style="margin-left: 8px;">⛶ Fullscreen</button>
         <div id="replay-container"></div>
     </div>
 
@@ -230,17 +270,17 @@
                 const res = await fetch('http://localhost:8082/sessions', {
                     headers: getHeaders()
                 });
-                
+
                 if (res.status === 401) {
                     alert("Unauthorized! Check Admin Key.");
                     return;
                 }
-                
+
                 const sessions = await res.json();
                 globalSessions = sessions;
                 const tbody = document.getElementById('sessions-tbody');
                 tbody.innerHTML = '';
-                
+
                 sessions.forEach(s => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -253,7 +293,7 @@
                     `;
                     tbody.appendChild(tr);
                 });
-                
+
                 filterTable(); // Apply filters immediately if they exist
                 showListView();
             } catch (err) {
@@ -271,11 +311,11 @@
             for (let i = 0; i < rows.length; i++) {
                 const domainCell = rows[i].querySelector('.col-domain');
                 const pathCell = rows[i].querySelector('.col-path');
-                
+
                 if (domainCell && pathCell) {
                     const domainText = domainCell.textContent.toLowerCase();
                     const pathText = pathCell.textContent.toLowerCase();
-                    
+
                     if (domainText.includes(domainFilter) && pathText.includes(pathFilter)) {
                         rows[i].style.display = "";
                     } else {
@@ -290,12 +330,12 @@
                 const res = await fetch(`http://localhost:8082/events/${sessionId}`, {
                     headers: getHeaders()
                 });
-                
+
                 if (res.status !== 200) {
                     alert("Failed to load events for session.");
                     return;
                 }
-                
+
                 const events = await res.json();
                 if (events.length < 2) {
                     alert("Not enough events to replay.");
@@ -310,7 +350,7 @@
                 const replayer = new rrweb.Replayer(events, {
                     root: container,
                 });
-                
+
                 replayer.play();
             } catch (err) {
                 console.error(err);
@@ -325,11 +365,33 @@
             document.getElementById('replay-container').innerHTML = '';
         }
 
+        function toggleFillWidth() {
+            const container = document.getElementById('replay-container');
+            container.classList.toggle('fill-width');
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('replay-container');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
         function showReplayView(sessionId) {
             document.getElementById('list-view').classList.add('hidden');
             document.getElementById('replay-view').classList.remove('hidden');
             document.getElementById('current-session-id').textContent = sessionId;
-            
+
             const s = globalSessions.find(x => x.id === sessionId);
             if (s) {
                 const dateStr = new Date(s.created_at).toLocaleString();
@@ -341,4 +403,5 @@
         }
     </script>
 </body>
+
 </html>
